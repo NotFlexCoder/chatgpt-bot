@@ -22,7 +22,7 @@ app.post("/", async (req, res) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: "👋 Hello there! I'm here to chat with you.\n\n💬 Just send me a message and I’ll try my best to respond.\n✨ Let’s get started!",
+          text: "👋 Hello there! I'm here to chat with you.\n\n💬 Just send me a message and I’ll try my best to respond.",
           reply_to_message_id: messageId
         }),
       });
