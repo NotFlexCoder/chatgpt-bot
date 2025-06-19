@@ -14,6 +14,7 @@ app.post("/", async (req, res) => {
   if (update.message) {
     const chatId = update.message.chat.id;
     const text = update.message.text;
+    const messageId = update.message.message_id;
 
     if (text === "/start") {
       await fetch(`${TELEGRAM_API}/sendMessage`, {
@@ -22,9 +23,19 @@ app.post("/", async (req, res) => {
         body: JSON.stringify({
           chat_id: chatId,
           text: "Welcome! Please send me a message.",
+          reply_to_message_id: messageId
         }),
       });
     } else {
+      await fetch(`${TELEGRAM_API}/sendChatAction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          action: "typing"
+        })
+      });
+
       const apiUrl = `https://flex-chat-api.vercel.app/?q=${encodeURIComponent(text)}`;
       const response = await fetch(apiUrl);
       const data = await response.json();
@@ -39,6 +50,7 @@ app.post("/", async (req, res) => {
             body: JSON.stringify({
               chat_id: chatId,
               text: message,
+              reply_to_message_id: messageId
             }),
           });
         } else {
@@ -48,6 +60,7 @@ app.post("/", async (req, res) => {
             body: JSON.stringify({
               chat_id: chatId,
               text: "⚠️ Sorry, the response is too long to send.",
+              reply_to_message_id: messageId
             }),
           });
         }
