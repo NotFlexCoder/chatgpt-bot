@@ -6,6 +6,15 @@ const app = express();
 app.use(bodyParser.json());
 
 const TOKEN = process.env.BOT_TOKEN;
+
+if (!TOKEN) {
+  console.error(JSON.stringify({
+    status: "error",
+    error: "BOT_TOKEN is missing. Please set the BOT_TOKEN environment variable."
+  }));
+  process.exit(1);
+}
+
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
 app.post("/", async (req, res) => {
