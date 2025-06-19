@@ -2,20 +2,21 @@ import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
-const app = express();
-app.use(bodyParser.json());
-
 const TOKEN = process.env.BOT_TOKEN;
 
 if (!TOKEN) {
-  console.error(JSON.stringify({
+  console.log(JSON.stringify({
     status: "error",
-    error: "BOT_TOKEN is missing. Please set the BOT_TOKEN environment variable."
+    error: "BOT_TOKEN is missing. Please set BOT_TOKEN in your environment."
   }));
-  process.exit(1);
+  // Use setTimeout to prevent crashing in some environments
+  setTimeout(() => process.exit(1), 100);
 }
 
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
+
+const app = express();
+app.use(bodyParser.json());
 
 app.post("/", async (req, res) => {
   const update = req.body;
