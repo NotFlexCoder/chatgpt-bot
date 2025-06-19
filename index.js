@@ -5,7 +5,7 @@ const fetch = require("node-fetch");
 const app = express();
 app.use(bodyParser.json());
 
-const TOKEN = "YOUR_BOT_TOKEN_HERE";
+const TOKEN = process.env.BOT_TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
 app.post("/", async (req, res) => {
