@@ -2,6 +2,24 @@ import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
+process.on("uncaughtException", err => {
+  console.log(JSON.stringify({
+    status: "error",
+    error: "Uncaught Exception",
+    message: err.message
+  }));
+  process.exit(1);
+});
+
+process.on("unhandledRejection", err => {
+  console.log(JSON.stringify({
+    status: "error",
+    error: "Unhandled Rejection",
+    message: err.message
+  }));
+  process.exit(1);
+});
+
 const TOKEN = process.env.BOT_TOKEN;
 const API_URL = process.env.API_URL;
 const API_RESPONSE = process.env.API_RESPONSE;
@@ -9,7 +27,8 @@ const API_RESPONSE = process.env.API_RESPONSE;
 if (!TOKEN || !API_URL) {
   console.log(JSON.stringify({
     status: "error",
-    error: "Missing environment variables. Please set BOT_TOKEN and API_URL."
+    error: "Missing environment variables",
+    message: "Please set BOT_TOKEN and API_URL in your environment"
   }));
   setTimeout(() => process.exit(1), 100);
 }
