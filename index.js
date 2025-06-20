@@ -47,23 +47,15 @@ app.post("/", async (req, res) => {
         })
       });
 
-      const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
-      const data = await response.json();
-
-      if (!data || data.status !== "success") {
-        await fetch(`${TELEGRAM_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: "❌ Error: Unable to fetch response.",
-            reply_to_message_id: messageId
-          }),
-        });
-        return res.sendStatus(200);
+      let data;
+      try {
+        const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
+        data = await response.json();
+      } catch {
+        data = null;
       }
 
-      const message = data.response || process.env.API_RESPONSE;
+      const message = data && data.status === "success" ? data.response : API_RESPONSE;
 
       if (!message) {
         await fetch(`${TELEGRAM_API}/sendMessage`, {
@@ -71,7 +63,7 @@ app.post("/", async (req, res) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "⚠️ Missing API response in environment.",
+            text: "⚠️ Missing response.",
             reply_to_message_id: messageId
           }),
         });
@@ -94,7 +86,7 @@ app.post("/", async (req, res) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "⚠️ Sorry, the response is too long to send.",
+            text: "⚠️ Response too long to send.",
             reply_to_message_id: messageId
           }),
         });
