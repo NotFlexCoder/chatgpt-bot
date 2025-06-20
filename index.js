@@ -2,37 +2,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
-process.on("uncaughtException", err => {
-  console.log(JSON.stringify({
-    status: "error",
-    error: "Uncaught Exception",
-    message: err.message
-  }));
-  process.exit(1);
-});
-
-process.on("unhandledRejection", err => {
-  console.log(JSON.stringify({
-    status: "error",
-    error: "Unhandled Rejection",
-    message: err.message
-  }));
-  process.exit(1);
-});
-
 const TOKEN = process.env.BOT_TOKEN;
 const API_URL = process.env.API_URL;
 const API_RESPONSE = process.env.API_RESPONSE;
-
-if (!TOKEN || !API_URL) {
-  console.log(JSON.stringify({
-    status: "error",
-    error: "Missing environment variables",
-    message: "Please set BOT_TOKEN and API_URL in your environment"
-  }));
-  setTimeout(() => process.exit(1), 100);
-}
-
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
 const app = express();
@@ -66,15 +38,23 @@ app.post("/", async (req, res) => {
         })
       });
 
-      let data;
-      try {
-        const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
-        data = await response.json();
-      } catch {
-        data = null;
+      const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
+      const data = await response.json();
+
+      if (!data || data.status !== "success") {
+        await fetch(`${TELEGRAM_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "❌ Error: Unable to fetch response.",
+            reply_to_message_id: messageId
+          }),
+        });
+        return res.sendStatus(200);
       }
 
-      const message = data && data.status === "success" ? data.response : API_RESPONSE;
+      const message = data.response || process.env.API_RESPONSE;
 
       if (!message) {
         await fetch(`${TELEGRAM_API}/sendMessage`, {
@@ -82,7 +62,7 @@ app.post("/", async (req, res) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "⚠️ Missing response.",
+            text: "⚠️ Missing API response in environment.",
             reply_to_message_id: messageId
           }),
         });
@@ -105,7 +85,7 @@ app.post("/", async (req, res) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "⚠️ Response too long to send.",
+            text: "⚠️ Sorry, the response is too long to send.",
             reply_to_message_id: messageId
           }),
         });
