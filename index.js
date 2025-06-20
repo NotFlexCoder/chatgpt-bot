@@ -3,13 +3,14 @@ import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
 const TOKEN = process.env.BOT_TOKEN;
+const API_URL = process.env.API_URL;
+const API_RESPONSE = process.env.API_RESPONSE;
 
-if (!TOKEN) {
+if (!TOKEN || !API_URL) {
   console.log(JSON.stringify({
     status: "error",
-    error: "BOT_TOKEN is missing. Please set BOT_TOKEN in your environment."
+    error: "Missing environment variables. Please set BOT_TOKEN and API_URL."
   }));
-  // Use setTimeout to prevent crashing in some environments
   setTimeout(() => process.exit(1), 100);
 }
 
@@ -46,34 +47,57 @@ app.post("/", async (req, res) => {
         })
       });
 
-      const apiUrl = `https://flex-chat-api.vercel.app/?q=${encodeURIComponent(text)}`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
       const data = await response.json();
 
-      if (data.status === "success") {
-        const message = data.response;
+      if (!data || data.status !== "success") {
+        await fetch(`${TELEGRAM_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "❌ Error: Unable to fetch response.",
+            reply_to_message_id: messageId
+          }),
+        });
+        return res.sendStatus(200);
+      }
 
-        if (message.length <= 4096) {
-          await fetch(`${TELEGRAM_API}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: message,
-              reply_to_message_id: messageId
-            }),
-          });
-        } else {
-          await fetch(`${TELEGRAM_API}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "⚠️ Sorry, the response is too long to send.",
-              reply_to_message_id: messageId
-            }),
-          });
-        }
+      const message = data.response || process.env.API_RESPONSE;
+
+      if (!message) {
+        await fetch(`${TELEGRAM_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "⚠️ Missing API response in environment.",
+            reply_to_message_id: messageId
+          }),
+        });
+        return res.sendStatus(200);
+      }
+
+      if (message.length <= 4096) {
+        await fetch(`${TELEGRAM_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            reply_to_message_id: messageId
+          }),
+        });
+      } else {
+        await fetch(`${TELEGRAM_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "⚠️ Sorry, the response is too long to send.",
+            reply_to_message_id: messageId
+          }),
+        });
       }
     }
   }
