@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
   const data = await response.json();
 
-  const message = data.message || API_RESPONSE || "⚠️ No message in API response";
+  const message = data.message || API_RESPONSE;
 
   await fetch(`${TELEGRAM_API}/sendMessage`, {
     method: "POST",
