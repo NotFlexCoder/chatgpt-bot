@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const API_RESPONSE = process.env.API_RESPONSE;
   const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
-  if (!TOKEN || !API_URL) {
+  if (!TOKEN || !API_URL || !API_RESPONSE) {
     return res.status(200).json({ status: "error", message: "Missing environment variables" });
   }
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
   const data = await response.json();
 
-  const message = data.message || API_RESPONSE;
+  const message = data[API_RESPONSE] || "⚠️ No response found.";
 
   await fetch(`${TELEGRAM_API}/sendMessage`, {
     method: "POST",
