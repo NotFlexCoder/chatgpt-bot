@@ -1,25 +1,20 @@
-import express from "express";
-import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
-const TOKEN = process.env.BOT_TOKEN;
-const API_URL = process.env.API_URL;
-const API_RESPONSE = process.env.API_RESPONSE;
-const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).send("OK");
+  }
 
-if (!TOKEN || !API_URL) {
-  console.log(JSON.stringify({
-    status: "error",
-    error: "Missing environment variables. Please set BOT_TOKEN and API_URL."
-  }));
-  setTimeout(() => process.exit(1), 100);
-}
-
-const app = express();
-app.use(bodyParser.json());
-
-app.post("/", async (req, res) => {
   const update = req.body;
+
+  const TOKEN = process.env.BOT_TOKEN;
+  const API_URL = process.env.API_URL;
+  const API_RESPONSE = process.env.API_RESPONSE;
+  const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
+
+  if (!TOKEN || !API_URL) {
+    return res.status(200).json({ error: "Missing env vars" });
+  }
 
   if (update.message) {
     const chatId = update.message.chat.id;
@@ -49,46 +44,19 @@ app.post("/", async (req, res) => {
       const response = await fetch(`${API_URL}?q=${encodeURIComponent(text)}`);
       const data = await response.json();
 
-      const message = data.message || API_RESPONSE;
+      const message = data.message || API_RESPONSE || "❌ No response from API.";
 
-      if (!message) {
-        await fetch(`${TELEGRAM_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: "⚠️ Missing message in API response or environment.",
-            reply_to_message_id: messageId
-          }),
-        });
-        return res.sendStatus(200);
-      }
-
-      if (message.length <= 4096) {
-        await fetch(`${TELEGRAM_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            reply_to_message_id: messageId
-          }),
-        });
-      } else {
-        await fetch(`${TELEGRAM_API}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: "⚠️ Sorry, the response is too long to send.",
-            reply_to_message_id: messageId
-          }),
-        });
-      }
+      await fetch(`${TELEGRAM_API}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          reply_to_message_id: messageId
+        }),
+      });
     }
   }
 
-  res.sendStatus(200);
-});
-
-app.listen(3000);
+  res.status(200).end();
+}
